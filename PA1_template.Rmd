@@ -7,19 +7,83 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r, echo=TRUE}
+d<-read.csv("activity.csv", sep=",")
+d$date<-as.Date(d$date, "%Y-%m-%d")
+install.packages('ggplot2', repos='https://cran.uni-muenster.de/')
+library(ggplot2)
+```
 
 
 
 ## What is mean total number of steps taken per day?
+### Calculation the total number of steps taken per day
+```{r, echo=TRUE}
+dg<-aggregate(steps~date, d, sum)
 
-
+```
+### Histogram of the total number of steps taken each day
+```{r, echo=TRUE}
+hist(dg$steps)
+```
+### Calculattion and reporting the mean and median of the total number of steps taken per day
+```{r, echo=TRUE}
+summary(dg$steps)
+```
 
 ## What is the average daily activity pattern?
-
-
+### Time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+```{r, echo=TRUE}
+i<-na.omit(d)
+i<-aggregate(steps~interval, i, mean)
+with(i, plot(interval, steps, type="l"))
+```
+### 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps
+```{r, echo=TRUE}
+max<-which(i$steps==max(i$steps))
+i$interval[max]
+```
 
 ## Imputing missing values
-
-
+### Calculating and reporting the total number of missing values in the dataset
+```{r, echo=TRUE}
+sum(is.na(d$steps))
+```
+### A strategy for filling in all of the missing values in the dataset. Creating a new dataset that is equal to the original dataset but with the missing data filled in
+```{r, echo=TRUE}
+nas<-which(is.na(d$steps))
+d1<-d
+for (k in nas) {
+	na_int<-d$interval[k]
+	n<-subset(d, interval==na_int)
+	d1$steps[k]<-mean(na.omit(n$steps))
+}
+```
+### Histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day
+```{r, echo=TRUE}
+d1g<-aggregate(steps~date, d1, sum)
+hist(d1g$steps)
+summary(d1g$steps)
+```
+The median in second case a bit higher (10770 vs 10760)
 
 ## Are there differences in activity patterns between weekdays and weekends?
+### A new factor variable in the dataset with two levels – “weekday” and “weekend”
+```{r, echo=TRUE}
+d1$day<-weekdays(d1$date)
+for (m in 1:nrow(d1)){
+if (d1$day[m]=="âîñêðåñåíüå"|d1$day[m]=="ñóááîòà") 
+	{d1$weektime[m]<-"weekend"
+	} 
+	else 
+	{d1$weektime[m]<-"weekday"
+	}
+}
+```
+### A panel plot containing a time series plot
+```{r, echo=TRUE}
+d2g<-aggregate(steps~weektime+interval, d1,mean)
+d2g$weektime<-as.factor(d2g$weektime)
+qplot(interval, steps, data=d2g, facets=weektime~., geom='line')
+```
+
